@@ -3,12 +3,10 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
-  BadRequestException,
   HttpStatus,
-  UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -43,7 +41,7 @@ export class UserController {
     };
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     const updateUser = this.userService.update(id, updateUserDto);
     return {
