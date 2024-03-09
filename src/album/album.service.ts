@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,67 +7,67 @@ import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { Album } from './interface/interface';
 import { v4 as uuidv4 } from 'uuid';
+import { DatabaseModule } from 'src/database/database.module';
 
 @Injectable()
 export class AlbumService {
-  private albums: Album[] = [];
-
   create(createAlbumDto: CreateAlbumDto) {
-    if (!createAlbumDto.name || !createAlbumDto.year) {
+    const { name, year, artistId } = createAlbumDto;
+    if (name === undefined || year === undefined || artistId === undefined) {
       throw new BadRequestException('body does not contain required fields');
     }
 
+    const artist = DatabaseModule.artists.find(
+      (artist) => artist.id === createAlbumDto.artistId,
+    );
+
     const newAlbum: Album = {
       id: uuidv4(),
-      name: createAlbumDto.name,
-      year: createAlbumDto.year,
-      artistId: createAlbumDto.artistId, // refers to Artist
+      name,
+      year,
+      artistId: artist !== undefined ? artist.id : null, // refers to Artist
     };
 
-    this.albums.push(newAlbum);
-
+    DatabaseModule.albums.push(newAlbum);
     return newAlbum;
   }
 
   findAll(): Album[] {
-    return this.albums;
+    return DatabaseModule.albums;
   }
 
-  findOne(id: string) {
-    const album = this.albums.find((album) => album.id === id);
-    if (!this.isValidUUID(id)) {
-      throw new BadRequestException('Invalid userId');
-    }
+  findOne(id: string): Album {
+    const album = DatabaseModule.albums.find((album) => album.id === id);
     if (!album) {
-      throw new NotFoundException(`user doesn't exist`);
+      throw new NotFoundException(`album doesn't exist`);
     }
     return album;
   }
 
-  private isValidUUID(id: string): boolean {
-    const uuidRegex =
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    return uuidRegex.test(id);
-  }
-
   update(id: string, updateAlbumDto: UpdateAlbumDto) {
-    this.albums = this.albums.map((album) => {
-      if (album.id === id) {
-        return {
-          ...album,
-          ...updateAlbumDto,
-        };
-      }
-      return album;
-    });
-    return this.findOne(id);
+    const index = DatabaseModule.albums.findIndex((album) => album.id === id);
+    if (index === -1) throw new NotFoundException(`Album doesn't exist`);
+
+    const updatedAlbum = {
+      ...DatabaseModule.albums[index],
+      ...updateAlbumDto,
+    };
+
+    DatabaseModule.albums[index] = updatedAlbum;
+
+    return updatedAlbum;
   }
 
   remove(id: string) {
-    const index = this.albums.findIndex((n) => n.id === id);
-    if (index !== -1) {
-      this.albums.splice(index, 1);
-      return this.albums;
-    }
+    const index = DatabaseModule.albums.findIndex((album) => album.id === id);
+    if (index === -1) throw new NotFoundException(`Album not found`);
+
+    DatabaseModule.albums.splice(index, 1);
+    DatabaseModule.favorites.albums = DatabaseModule.favorites.albums.filter(
+      (albumId) => albumId !== id,
+    );
+    DatabaseModule.tracks.forEach((track) => {
+      if (track.albumId === id) track.albumId = null;
+    });
   }
 }

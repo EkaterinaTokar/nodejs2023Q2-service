@@ -7,68 +7,71 @@ import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
 import { Track } from './interface/interface';
 import { v4 as uuidv4 } from 'uuid';
+import { DatabaseModule } from 'src/database/database.module';
 
 @Injectable()
 export class TrackService {
-  private tracks: Track[] = [];
-
   create(createTrackDto: CreateTrackDto) {
-    if (!createTrackDto.name || !createTrackDto.duration) {
+    const { name, duration, albumId, artistId } = createTrackDto;
+    if (
+      name === undefined ||
+      duration === undefined ||
+      albumId === undefined ||
+      artistId === undefined
+    ) {
       throw new BadRequestException('body does not contain required fields');
     }
 
+    const artist = DatabaseModule.artists.find(
+      (artist) => artist.id === createTrackDto.artistId,
+    );
+
+    const album = DatabaseModule.albums.find(
+      (album) => album.id === createTrackDto.albumId,
+    );
+
     const newTrack: Track = {
       id: uuidv4(),
-      name: createTrackDto.name,
-      artistId: createTrackDto.artistId,
-      albumId: createTrackDto.albumId,
       duration: createTrackDto.duration,
+      name: createTrackDto.name,
+      artistId: artist !== undefined ? artist.id : null, // refers to Artist
+      albumId: album !== undefined ? album.id : null, // refers to Album
     };
 
-    this.tracks.push(newTrack);
-
+    DatabaseModule.tracks.push(newTrack);
     return newTrack;
   }
 
   findAll(): Track[] {
-    return this.tracks;
+    return DatabaseModule.tracks;
   }
 
-  findOne(id: string) {
-    const track = this.tracks.find((track) => track.id === id);
-    if (!this.isValidUUID(id)) {
-      throw new BadRequestException('Invalid trackId');
-    }
+  findOne(id: string): Track {
+    const track = DatabaseModule.tracks.find((track) => track.id === id);
     if (!track) {
-      throw new NotFoundException(`track doesn't exist`);
+      throw new NotFoundException(`Track with id ${id} not found`);
     }
     return track;
   }
 
-  private isValidUUID(id: string): boolean {
-    const uuidRegex =
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    return uuidRegex.test(id);
-  }
-
   update(id: string, updateTrackDto: UpdateTrackDto) {
-    this.tracks = this.tracks.map((track) => {
-      if (track.id === id) {
-        return {
-          ...track,
-          ...updateTrackDto,
-        };
-      }
-      return track;
-    });
-    return this.findOne(id);
+    const index = DatabaseModule.tracks.findIndex((track) => track.id === id);
+    if (index === -1) throw new NotFoundException(`Track not found`);
+
+    const updatedTrack = {
+      ...DatabaseModule.tracks[index],
+      ...updateTrackDto,
+    };
+
+    DatabaseModule.tracks[index] = updatedTrack;
+    return updatedTrack;
   }
 
   remove(id: string) {
-    const index = this.tracks.findIndex((n) => n.id === id);
-    if (index !== -1) {
-      this.tracks.splice(index, 1);
-      return this.tracks;
-    }
+    const index = DatabaseModule.tracks.findIndex((n) => n.id === id);
+    if (index === -1)
+      throw new NotFoundException(`Track with id ${id} not found`);
+    DatabaseModule.tracks.splice(index, 1);
+    return;
   }
 }

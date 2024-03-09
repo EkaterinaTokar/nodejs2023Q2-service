@@ -8,75 +8,76 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './interface/interface';
 import { v4 as uuidv4 } from 'uuid';
+import { DatabaseModule } from 'src/database/database.module';
 
 @Injectable()
 export class UserService {
-  private users: User[] = [];
-
   create(createUserDto: CreateUserDto) {
     if (!createUserDto.login || !createUserDto.password) {
       throw new BadRequestException('body does not contain required fields');
     }
 
-    const { login, password } = createUserDto;
-
     const newUser: User = {
       id: uuidv4(),
-      login,
-      password,
+      login: createUserDto.login,
+      password: createUserDto.password,
       version: 1,
       createdAt: new Date().getTime(),
       updatedAt: new Date().getTime(),
     };
+    DatabaseModule.users.push(newUser);
 
-    this.users.push(newUser);
-
-    return newUser;
+    return {
+      id: newUser.id,
+      login: newUser.login,
+      version: newUser.version,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt,
+    };
   }
 
   findAll(): User[] {
-    return this.users;
+    return DatabaseModule.users;
   }
 
   findOne(id: string) {
-    const user = this.users.find((user) => user.id === id);
-    if (!this.isValidUUID(id)) {
-      throw new BadRequestException('Invalid userId');
-    }
+    const user = DatabaseModule.users.find((user) => user.id === id);
     if (!user) {
-      throw new NotFoundException(`user doesn't exist`);
+      throw new NotFoundException(`User doesn't exist`);
     }
     return user;
   }
 
-  private isValidUUID(id: string): boolean {
-    const uuidRegex =
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    return uuidRegex.test(id);
-  }
-
   update(id: string, updateUserDto: UpdateUserDto) {
-    this.users = this.users.map((user) => {
-      if (user.id === id) {
-        if (user.password === updateUserDto.oldPassword) {
-          return {
-            ...user,
-            password: updateUserDto.newPassword,
-            ...updateUserDto,
-          };
-        }
-        throw new ForbiddenException(`oldPassword is wrong`);
-      }
-      return user;
-    });
-    return this.findOne(id);
+    const user = DatabaseModule.users.find((user) => user.id === id);
+    if (!user) {
+      throw new NotFoundException(`User doesn't exist`);
+    }
+
+    if (user.password !== updateUserDto.oldPassword) {
+      throw new ForbiddenException(`Old password is wrong`);
+    }
+
+    user.password = updateUserDto.newPassword;
+    user.version++;
+    user.updatedAt = new Date().getTime();
+
+    return {
+      id: user.id,
+      login: user.login,
+      version: user.version,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   remove(id: string) {
-    const index = this.users.findIndex((n) => n.id === id);
+    const index = DatabaseModule.users.findIndex((n) => n.id === id);
     if (index !== -1) {
-      this.users.splice(index, 1);
-      return this.users;
+      DatabaseModule.users.splice(index, 1);
+      return;
+    } else {
+      throw new NotFoundException(`User with id ${id} not found`);
     }
   }
 }
