@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-db
+    restart: always
+    # environment:
+    #   POSTGRES_DB: postgres
+    #   POSTGRES_USER: postgres
+    #   POSTGRES_PASSWORD: postgres
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes: 
+      - postgres-db-volume:/var/lib/postgresql/data
+    networks:
+      - postgres-db-network
+
+  app:
+    image: home-library:latest
+    build: .
+    container_name: app
+     # environment:
+     #   PG_HOST: postgres-db
+     #   PG_USER: postgres
+     #   PG_PASSWORD: postgres
+     #   PG_DB: postgres
+     #   PG_PORT: 5432
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./src:/app/src
+    networks:
+      - postgres-db-network
+
+networks:
+  postgres-db-network:
+    driver: bridge
+
+volumes:
+  postgres-db-volume:

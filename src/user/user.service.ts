@@ -6,26 +6,36 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './interface/interface';
+//import { User } from './interface/interface';
 import { v4 as uuidv4 } from 'uuid';
-import { DatabaseModule } from 'src/database/database.module';
+//import { DatabaseModule } from 'src/database/database.module';
+
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
-  create(createUserDto: CreateUserDto) {
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
+
+  async create(createUserDto: CreateUserDto): Promise<User> {
     if (!createUserDto.login || !createUserDto.password) {
       throw new BadRequestException('body does not contain required fields');
     }
 
-    const newUser: User = {
+    const newUser: User = this.userRepository.create({
       id: uuidv4(),
       login: createUserDto.login,
       password: createUserDto.password,
       version: 1,
       createdAt: new Date().getTime(),
       updatedAt: new Date().getTime(),
-    };
-    DatabaseModule.users.push(newUser);
+    });
+    //DatabaseModule.users.push(newUser);
+    await this.userRepository.save(newUser);
 
     return {
       id: newUser.id,
@@ -36,20 +46,21 @@ export class UserService {
     };
   }
 
-  findAll(): User[] {
-    return DatabaseModule.users;
+  async findAll(): Promise<User[]> {
+    // return DatabaseModule.users;
+    return this.userRepository.find();
   }
 
-  findOne(id: string) {
-    const user = DatabaseModule.users.find((user) => user.id === id);
+  async findOne(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User doesn't exist`);
     }
     return user;
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
-    const user = DatabaseModule.users.find((user) => user.id === id);
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User doesn't exist`);
     }
@@ -61,21 +72,23 @@ export class UserService {
     user.password = updateUserDto.newPassword;
     user.version++;
     user.updatedAt = new Date().getTime();
+    await this.userRepository.save(user);
 
     return {
       id: user.id,
       login: user.login,
       version: user.version,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: +user.createdAt,
+      updatedAt: +user.updatedAt,
     };
   }
 
-  remove(id: string) {
-    const index = DatabaseModule.users.findIndex((n) => n.id === id);
-    if (index !== -1) {
-      DatabaseModule.users.splice(index, 1);
-      return;
+  async remove(id: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (user) {
+      //DatabaseModule.users.splice(index, 1);
+      // return;
+      await this.userRepository.delete(id);
     } else {
       throw new NotFoundException(`User with id ${id} not found`);
     }
