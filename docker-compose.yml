@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes: 
+      - postgres-db-volume:/var/lib/postgresql/data
+      - ./logs:/app/logs 
+    networks:
+      - postgres-db
+
+  app:
+    build: .
+    command: npm run start:dev
+    image: home-library:latest
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./src:/app/src
+    restart: always
+    networks:
+      - postgres-db
+
+networks:
+  postgres-db:
+  app:
+    driver: bridge
+
+volumes:
+  postgres-db-volume:
+  logs:
