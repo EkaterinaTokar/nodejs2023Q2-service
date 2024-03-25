@@ -5,12 +5,10 @@ import {
 } from '@nestjs/common';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
-//import { Album } from './interface/interface';
 import { v4 as uuidv4 } from 'uuid';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Album } from './entities/album.entity';
-//import { DatabaseModule } from 'src/database/database.module';
 
 @Injectable()
 export class AlbumService {
@@ -24,20 +22,6 @@ export class AlbumService {
       throw new BadRequestException('body does not contain required fields');
     }
 
-    /*const artist = DatabaseModule.artists.find(
-      (artist) => artist.id === createAlbumDto.artistId,
-    );
-
-    const newAlbum: Album = {
-      id: uuidv4(),
-      name,
-      year,
-      artistId: artist !== undefined ? artist.id : null, // refers to Artist
-    };
-
-    DatabaseModule.albums.push(newAlbum);
-    return newAlbum;*/
-
     const newAlbum = this.albumRepository.create({
       id: uuidv4(),
       name,
@@ -49,7 +33,6 @@ export class AlbumService {
   }
 
   async findAll(): Promise<Album[]> {
-    //return DatabaseModule.albums;
     return await this.albumRepository.find();
   }
 
@@ -75,15 +58,6 @@ export class AlbumService {
   async remove(id: string): Promise<void> {
     const album = await this.findOne(id);
     if (!album) throw new NotFoundException(`Album not found`);
-
-    /* DatabaseModule.albums.splice(index, 1);
-    DatabaseModule.favorites.albums = DatabaseModule.favorites.albums.filter(
-      (albumId) => albumId !== id,
-    );
-    DatabaseModule.tracks.forEach((track) => {
-      if (track.albumId === id) track.albumId = null;
-    });
-  }*/
     await this.albumRepository.remove(album);
   }
 }

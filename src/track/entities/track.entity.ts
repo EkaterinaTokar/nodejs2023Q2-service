@@ -26,9 +26,9 @@ export class Track {
   duration: number;
 
   @ManyToOne(() => Artist, (artist) => artist.tracks, { onDelete: 'SET NULL' })
-  //@JoinColumn({ name: 'artistId' })
+  @JoinColumn({ name: 'artistId' })
   artist: Artist;
   @ManyToOne(() => Album, (album) => album.tracks, { onDelete: 'SET NULL' })
-  //@JoinColumn({ name: 'albumId' })
+  @JoinColumn({ name: 'albumId' })
   album: Album;
 }

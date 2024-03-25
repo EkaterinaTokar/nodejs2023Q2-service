@@ -5,7 +5,6 @@ import { Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Favorite {
-  [x: string]: any;
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -13,11 +12,11 @@ export class Favorite {
   @JoinTable()
   artists: Artist[];
 
-  @ManyToMany(() => Album, { onDelete: 'SET NULL' })
-  @JoinTable()
-  albums: Album[];
-
   @ManyToMany(() => Track, { onDelete: 'SET NULL' })
   @JoinTable()
   tracks: Track[];
+
+  @ManyToMany(() => Album, { onDelete: 'SET NULL' })
+  @JoinTable()
+  albums: Album[];
 }

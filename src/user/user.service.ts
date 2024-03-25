@@ -34,7 +34,6 @@ export class UserService {
       createdAt: new Date().getTime(),
       updatedAt: new Date().getTime(),
     });
-    //DatabaseModule.users.push(newUser);
     await this.userRepository.save(newUser);
 
     return {
@@ -47,7 +46,6 @@ export class UserService {
   }
 
   async findAll(): Promise<User[]> {
-    // return DatabaseModule.users;
     return this.userRepository.find();
   }
 
