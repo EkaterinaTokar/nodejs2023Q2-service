@@ -41,8 +41,8 @@ export class UserService {
       id: newUser.id,
       login: newUser.login,
       version: newUser.version,
-      createdAt: newUser.createdAt,
-      updatedAt: newUser.updatedAt,
+      createdAt: newUser.createdAt ? +newUser.createdAt : null,
+      updatedAt: newUser.updatedAt ? +newUser.updatedAt : null,
     };
   }
 
@@ -78,8 +78,8 @@ export class UserService {
       id: user.id,
       login: user.login,
       version: user.version,
-      createdAt: +user.createdAt,
-      updatedAt: +user.updatedAt,
+      createdAt: user.createdAt ? +user.createdAt : null,
+      updatedAt: user.updatedAt ? +user.updatedAt : null,
     };
   }
 

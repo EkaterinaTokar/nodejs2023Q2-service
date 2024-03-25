@@ -5,13 +5,22 @@ import {
 } from '@nestjs/common';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
-import { Artist } from './interface/interface';
+//import { Artist } from './interface/interface';
 import { v4 as uuidv4 } from 'uuid';
-import { DatabaseModule } from 'src/database/database.module';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Artist } from './entities/artist.entity';
+import { Repository } from 'typeorm';
+import { Album } from 'src/album/entities/album.entity';
+import { Track } from 'src/track/entities/track.entity';
+//import { DatabaseModule } from 'src/database/database.module';
 
 @Injectable()
 export class ArtistService {
-  create(createArtistDto: CreateArtistDto) {
+  constructor(
+    @InjectRepository(Artist)
+    private readonly artistRepository: Repository<Artist>,
+  ) {}
+  async create(createArtistDto: CreateArtistDto) {
     const { name, grammy } = createArtistDto;
     if (name === undefined || grammy === undefined) {
       throw new BadRequestException('body does not contain required fields');
@@ -21,46 +30,50 @@ export class ArtistService {
       id: uuidv4(),
       name,
       grammy,
+      albums: [],
+      tracks: [],
     };
 
-    DatabaseModule.artists.push(newArtist);
-    return newArtist;
+    // DatabaseModule.artists.push(newArtist);
+    // return newArtist;
+    return await this.artistRepository.save(newArtist);
   }
 
-  findAll() {
-    return DatabaseModule.artists;
+  async findAll(): Promise<Artist[]> {
+    return this.artistRepository.find();
+    //return DatabaseModule.artists;
   }
 
-  findOne(id: string) {
-    const artist = DatabaseModule.artists.find((artist) => artist.id === id);
+  async findOne(id: string): Promise<Artist> {
+    const artist = await this.artistRepository.findOne({ where: { id } });
     if (!artist) {
       throw new NotFoundException(`Artist ${id} doesn't exist`);
     }
     return artist;
   }
 
-  update(id: string, updateArtistDto: UpdateArtistDto) {
-    const index = DatabaseModule.artists.findIndex(
-      (artist) => artist.id === id,
-    );
-    if (index === -1) throw new NotFoundException(`Artist ${id} doesn't exist`);
+  async update(id: string, updateArtistDto: UpdateArtistDto) {
+    const artist = await this.artistRepository.findOne({ where: { id } });
+    if (!artist) throw new NotFoundException(`Artist ${id} doesn't exist`);
 
-    const updatedArtist = {
+    /* const updatedArtist = {
       ...DatabaseModule.artists[index],
       ...updateArtistDto,
     };
 
     DatabaseModule.artists[index] = updatedArtist;
-    return updatedArtist;
+    return updatedArtist;*/
+    artist.name = updateArtistDto.name;
+    artist.grammy = updateArtistDto.grammy;
+
+    return await this.artistRepository.save(artist);
   }
 
-  remove(id: string) {
-    const index = DatabaseModule.artists.findIndex(
-      (artist) => artist.id === id,
-    );
-    if (index === -1) throw new NotFoundException(`Artist not found`);
+  async remove(id: string) {
+    const result = await this.artistRepository.delete(id);
+    if (result.affected === 0) throw new NotFoundException(`Artist not found`);
 
-    DatabaseModule.artists.splice(index, 1);
+    /*DatabaseModule.artists.splice(index, 1);
     DatabaseModule.favorites.artists = DatabaseModule.favorites.artists.filter(
       (artistId) => artistId !== id,
     );
@@ -69,6 +82,6 @@ export class ArtistService {
     });
     DatabaseModule.albums.forEach((album) => {
       if (album.artistId === id) album.artistId = null;
-    });
+    });*/
   }
 }

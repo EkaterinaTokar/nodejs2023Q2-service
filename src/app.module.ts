@@ -10,6 +10,7 @@ import { FavoriteModule } from './favorite/favorite.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import 'dotenv/config';
+
 @Module({
   /*imports: [
     UserModule,
@@ -22,6 +23,10 @@ import 'dotenv/config';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     UserModule,
+    TrackModule,
+    ArtistModule,
+    AlbumModule,
+    FavoriteModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.PG_HOST,
@@ -29,8 +34,9 @@ import 'dotenv/config';
       username: process.env.PG_USER,
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DB,
-      entities: [],
+      entities: ['dist/**/entities/*.entity.{ts,js}'],
       synchronize: true,
+      logging: true,
       autoLoadEntities: true,
     }),
   ],

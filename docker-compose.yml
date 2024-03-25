@@ -4,6 +4,7 @@ services:
     image: postgres:latest
     container_name: postgres-db
     restart: always
+    # dockerfile: Dockerfile.db
     # environment:
     #   POSTGRES_DB: postgres
     #   POSTGRES_USER: postgres
@@ -15,18 +16,20 @@ services:
     volumes: 
       - postgres-db-volume:/var/lib/postgresql/data
     networks:
-      - postgres-db-network
+      - postgres-db
 
   app:
-    image: home-library:latest
+    # dockerfile: Dockerfile
     build: .
-    container_name: app
-     # environment:
-     #   PG_HOST: postgres-db
-     #   PG_USER: postgres
-     #   PG_PASSWORD: postgres
-     #   PG_DB: postgres
-     #   PG_PORT: 5432
+    command: npm run start:dev
+    image: home-library:latest
+    # container_name: app
+    # environment:
+    #    PG_HOST: postgres
+    #    PG_USER: postgres
+    #    PG_PASSWORD: postgres
+    #    PG_DB: postgres
+    #    PG_PORT: 5432
     env_file:
       - .env
     ports:
@@ -36,10 +39,10 @@ services:
     volumes:
       - ./src:/app/src
     networks:
-      - postgres-db-network
+      - postgres-db
 
 networks:
-  postgres-db-network:
+  postgres-db:
     driver: bridge
 
 volumes:
